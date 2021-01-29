@@ -9,8 +9,6 @@ options(scipen = 999)
 rmsk <- read.table("../repeatmasker_track/del.qmark_rmsk.txt", header = F)
 genome_te <- cbind(rmsk$V6, rmsk$V12, paste(rmsk$V12,rmsk$V13)) %>% as.data.frame()
 
-table(genome_te$class) #no ? occure
-table(genome_te$family) #no ? occure
 
 ## include the alt contig 
 ### way too slow
@@ -24,10 +22,13 @@ chr_name <- read.table("../repeatmasker_track/chr_name.txt")
 genome_te <- cbind(genome_te, chr_name)
 colnames(genome_te) <- c("chr", "class", "family","chr_inc")
 
+table(genome_te$class) #no ? occure
+table(genome_te$family) #no ? occure
 
 all.class <- unique(genome_te$class) %>% sort()
 all.fml <- unique(genome_te$family) %>% sort()
 
+save(genome_te,file = "genome_te.Rdata")
 
 ##########################################
 ######## construct matrix | class ########
@@ -54,15 +55,22 @@ for (cls in all.class) {
 }
 
 
+#################=============== plot ================#########################
 
 
-##########################################
-####### class pie chart for genome #######
-##########################################
 dat <- melt(cls_mx)
 colnames(dat) <- c("class","chr","num")
 
 library(ggplot2)
+
+mycols <- c("#D6EAF8", "#A9DFBF", "#74c493", "#16A085",
+            "#aacc22", "#FFBF00", "#E4BF80", "#DC7633",
+            "#E34234", "#9A2A2A", "#630330", "#342D7E",
+            "#4863A0", "#98AFC7", "#BCC6CC", "#CFD8DC") 
+
+##########################################
+####### class pie chart for genome #######
+##########################################
 
 theme_set(
   theme_void() +
@@ -73,8 +81,7 @@ theme_set(
 mycols <- c("#D6EAF8", "#A9DFBF", "#74c493", "#16A085",
             "#aacc22", "#FFBF00", "#E4BF80", "#DC7633",
             "#E34234", "#9A2A2A", "#630330", "#342D7E",
-            "#4863A0", "#98AFC7", "#BCC6CC", "#CFD8DC") # platte for pie chart
-
+            "#4863A0", "#98AFC7", "#BCC6CC", "#CFD8DC") 
 
 p <- ggplot(dat, aes(x="", y=num, fill=class, group=class))
 p + geom_bar(width = 1, stat="identity")+
@@ -119,10 +126,57 @@ ggsave(filename = "genome.class_dist.fill.png")
 ggsave(filename = "genome.class_dist.fill.pdf")
 
 
+### stack
+#### log10
+theme_set(
+  theme_minimal() +
+    theme(legend.position = "right",
+          legend.key.size = unit(12, "pt"))
+)
+
+q <- ggplot(data = dat %>% filter(chr != "chrM")
+            , aes(x=chr, y=as.numeric(num), fill=class))
+q + geom_col(position="stack")+
+  labs(title = "TE Class Distribution in Diff. Chromosomes",
+       x = NULL,y = 'log10 TE Class Number')+
+  coord_flip()+
+  scale_fill_manual(values = mycols)+
+  guides(fill = guide_legend(title="TE Class"))+
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 8),
+        legend.title=element_text(size=7),
+        legend.text=element_text(size=6))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  scale_y_log10()
+
+ggsave(filename = "genome.class_log_dist.stack.png")
+ggsave(filename = "genome.class_log_dist.stack.pdf")
 
 
+### stack
+#### no log tranformation
+theme_set(
+  theme_minimal() +
+    theme(legend.position = "right",
+          legend.key.size = unit(12, "pt"))
+)
 
-
+q <- ggplot(data = dat %>% filter(chr != "chrM")
+            , aes(x=chr, y=as.numeric(num), fill=class))
+q + geom_col(position="stack")+
+  labs(title = "TE Class Distribution in Diff. Chromosomes",
+       x = NULL,y = 'log10 TE Class Number')+
+  coord_flip()+
+  scale_fill_manual(values = mycols)+
+  guides(fill = guide_legend(title="TE Class"))+
+  theme(axis.text.x = element_text(size = 8),
+        axis.text.y = element_text(size = 8),
+        legend.title=element_text(size=7),
+        legend.text=element_text(size=6))+
+  theme(plot.title = element_text(hjust = 0.5))
+  
+ggsave(filename = "genome.class_dist.stack.png")
+ggsave(filename = "genome.class_dist.stack.pdf")
 
 
 ##########################################
