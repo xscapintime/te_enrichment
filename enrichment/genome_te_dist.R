@@ -58,6 +58,11 @@ for (cls in all.class) {
 #################=============== plot ================#########################
 
 
+
+##########################################
+####### class pie chart for genome #######
+##########################################
+
 dat <- melt(cls_mx)
 colnames(dat) <- c("class","chr","num")
 
@@ -68,20 +73,12 @@ mycols <- c("#D6EAF8", "#A9DFBF", "#74c493", "#16A085",
             "#E34234", "#9A2A2A", "#630330", "#342D7E",
             "#4863A0", "#98AFC7", "#BCC6CC", "#CFD8DC") 
 
-##########################################
-####### class pie chart for genome #######
-##########################################
-
 theme_set(
   theme_void() +
     theme(legend.position = "right",
           legend.key.size = unit(12, "pt"))
 )
 
-mycols <- c("#D6EAF8", "#A9DFBF", "#74c493", "#16A085",
-            "#aacc22", "#FFBF00", "#E4BF80", "#DC7633",
-            "#E34234", "#9A2A2A", "#630330", "#342D7E",
-            "#4863A0", "#98AFC7", "#BCC6CC", "#CFD8DC") 
 
 p <- ggplot(dat, aes(x="", y=num, fill=class, group=class))
 p + geom_bar(width = 1, stat="identity")+
@@ -90,7 +87,7 @@ p + geom_bar(width = 1, stat="identity")+
   guides(fill = guide_legend(title="TE Class"))+
   ggtitle("TE Distribuiton in Human Genome by Class")+
   theme(plot.title = element_text(hjust = 0.5))
-ggsave(filename = "genome_te_dist.png")
+ggsave(filename = "../figure/pie_genome_te.cls_dist.png")
 
 
 #########################################
@@ -122,8 +119,8 @@ p + geom_col(position="fill")+
   theme(plot.title = element_text(hjust = 0.5))+
   scale_y_log10()
 
-ggsave(filename = "genome.class_dist.fill.png")
-ggsave(filename = "genome.class_dist.fill.pdf")
+ggsave(filename = "../figure/genome.class_log_dist.fill.png")
+ggsave(filename = "../figure/genome.class_log_dist.fill.pdf")
 
 
 ### stack
@@ -149,8 +146,8 @@ q + geom_col(position="stack")+
   theme(plot.title = element_text(hjust = 0.5))+
   scale_y_log10()
 
-ggsave(filename = "genome.class_log_dist.stack.png")
-ggsave(filename = "genome.class_log_dist.stack.pdf")
+ggsave(filename = "../figure/genome.class_log_dist.stack.png")
+ggsave(filename = "../figure/genome.class_log_dist.stack.pdf")
 
 
 ### stack
@@ -165,7 +162,7 @@ q <- ggplot(data = dat %>% filter(chr != "chrM")
             , aes(x=chr, y=as.numeric(num), fill=class))
 q + geom_col(position="stack")+
   labs(title = "TE Class Distribution in Diff. Chromosomes",
-       x = NULL,y = 'log10 TE Class Number')+
+       x = NULL,y = 'TE Class Number')+
   coord_flip()+
   scale_fill_manual(values = mycols)+
   guides(fill = guide_legend(title="TE Class"))+
@@ -175,8 +172,8 @@ q + geom_col(position="stack")+
         legend.text=element_text(size=6))+
   theme(plot.title = element_text(hjust = 0.5))
   
-ggsave(filename = "genome.class_dist.stack.png")
-ggsave(filename = "genome.class_dist.stack.pdf")
+ggsave(filename = "../figure/genome.class_dist.stack.png")
+ggsave(filename = "../figure/genome.class_dist.stack.pdf")
 
 
 ##########################################
@@ -204,19 +201,16 @@ for (fml in all.fml) {
 }
 
 
+#################=============== plot ================#########################
+
 
 #############################################
-#### class pie chart for genome | family ####
+######## family pie chart for genome ########
 #############################################
 dat <- melt(fml_mx)
 colnames(dat) <- c("fml","chr","num")
 
 library(ggplot2)
-#library(RColorBrewer)
-
-# library(ggsci)
-# library("scales")
-# library(wesanderson)
 
 
 theme_set(
@@ -230,20 +224,19 @@ mycols <- c("#D6EAF8", "#A9DFBF", "#74c493", "#16A085",
              "#E34234", "#9A2A2A", "#630330", "#342D7E",
              "#4863A0", "#98AFC7", "#BCC6CC", "#CFD8DC") 
 
-
-mycolors <- colorRampPalette(brewer.pal(8,"Paired"))(56)
+morecols <- (grDevices::colorRampPalette(mycols))(56) ### expand the platte!
 
 p <- ggplot(dat, aes(x="", y=num, fill=fml, group=fml))
 p + geom_bar(width = 1, stat="identity")+
   coord_polar("y")+
-  scale_fill_manual(values = (grDevices::colorRampPalette(mycols))(56))+
-  guides(fill = guide_legend(title="TE Class"))+
+  scale_fill_manual(values = morecols)+ 
+  guides(fill = guide_legend(title="TE Family"))+
   ggtitle("TE Distribuiton in Human Genome by Family")+
   theme(plot.title = element_text(hjust = 0.5),
         legend.title=element_text(size=7),
         legend.text=element_text(size=6),
         plot.margin=unit(c(1.5, 1, 1.5, 1),'lines'))
-ggsave(filename = "genome_te.fml_dist.png", width = 7, height = 6)
+ggsave(filename = "../figure/pie_genome_te.fml_dist.png", width = 7, height = 6)
 
 
 #########################################
@@ -260,20 +253,71 @@ theme_set(
           legend.key.size = unit(12, "pt"))
 )
 
+
+mycols <- c("#D6EAF8", "#A9DFBF", "#74c493", "#16A085",
+            "#aacc22", "#FFBF00", "#E4BF80", "#DC7633",
+            "#E34234", "#9A2A2A", "#630330", "#342D7E",
+            "#4863A0", "#98AFC7", "#BCC6CC", "#CFD8DC") 
+
+morecols <- (grDevices::colorRampPalette(mycols))(56) ### expand the platte!
+
+
 p <- ggplot(data = dat %>% filter(chr != "chrM")
-            , aes(x=chr, y=as.numeric(num), fill=class))
+            , aes(x=chr, y=as.numeric(num), fill=fml))
 p + geom_col(position="fill")+
-  labs(title = "TE Class Distribution in Diff. Chromosomes",
-       x = NULL,y = 'log10 TE Class Proportion')+
+  labs(title = "TE Family Distribution in Diff. Chromosomes",
+       x = NULL,y = 'log10 TE Family Proportion')+
   coord_flip()+
-  scale_fill_manual(values = mycols)+
-  guides(fill = guide_legend(title="TE Class"))+
+  scale_fill_manual(values = morecols)+
+  guides(fill = guide_legend(title="TE Family",ncol = 2))+
   theme(axis.text.x = NULL,
         axis.text.y = element_text(size = 8),
-        legend.title=element_text(size=7),
-        legend.text=element_text(size=6))+
+        legend.title = element_text(size=7),
+        legend.text = element_text(size=6))+
   theme(plot.title = element_text(hjust = 0.5))+
   scale_y_log10()
 
-ggsave(filename = "genome.class_dist.fill.png")
-ggsave(filename = "genome.class_dist.fill.pdf")
+ggsave(filename = "../figure/genome.family_log_dist.fill.png", width = 7, height = 6)
+ggsave(filename = "../figure/genome.family_log_dist.fill.pdf", width = 7, height = 6)
+
+
+### stack
+q <- ggplot(data = dat %>% filter(chr != "chrM")
+            , aes(x=chr, y=as.numeric(num), fill=fml))
+q + geom_col(position="stack")+
+  labs(title = "TE Family Distribution in Diff. Chromosomes",
+       x = NULL,y = 'log10 TE Family Number')+
+  coord_flip()+
+  scale_fill_manual(values = morecols)+
+  guides(fill = guide_legend(title="TE Family",ncol = 2))+
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 8),
+        legend.title = element_text(size=7),
+        legend.text = element_text(size=6))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  scale_y_log10()
+
+ggsave(filename = "../figure/genome.family_log_dist.stack.png", width = 7, height = 6)
+ggsave(filename = "../figure/genome.family_log_dist.stack.pdf", width = 7, height = 6)
+
+
+### stack
+#### no log
+q <- ggplot(data = dat %>% filter(chr != "chrM")
+            , aes(x=chr, y=as.numeric(num), fill=fml))
+q + geom_col(position="stack")+
+  labs(title = "TE Family Distribution in Diff. Chromosomes",
+       x = NULL,y = 'TE Family Number')+
+  coord_flip()+
+  scale_fill_manual(values = morecols)+
+  guides(fill = guide_legend(title="TE Family",ncol = 2))+
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 8),
+        legend.title = element_text(size=7),
+        legend.text = element_text(size=6))+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+ggsave(filename = "../figure/genome.family_dist.stack.png", width = 7, height = 6)
+ggsave(filename = "../figure/genome.family_dist.stack.pdf", width = 7, height = 6)
+
