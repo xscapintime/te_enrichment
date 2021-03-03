@@ -1,0 +1,89 @@
+---
+title: "TE Distribution and Normalizaiton (by class)"
+author: "L.S."
+date: "2021/3/3"
+output: html_document:
+    theme: cerulean
+    toc: no
+    number_sections: no
+  pdf_document:
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Setup
+```{r}
+rm(list = ls())
+library(dplyr)
+library(reshape2)
+options(scipen = 999)
+```
+
+## Data prep.
+### load the matrix
+TE class were sorted by number, and TFs were sorted by looping z-score.
+```{r}
+load("./nromedpkn_class_matrix_sorted.Rdata")
+
+## transform to long data format
+dat <- melt(normpkn_cls_mx)
+colnames(dat) <- c("class", "tf", "norm")
+```
+### Load looping z-score
+```{r}
+lp_zsc <- read.csv("../.././../../hs_getloops/intrachr/3.plot/exless_h.all.tf_des-meanz.v3.csv", header = T)
+
+## group
+lp_zsc$group <- ifelse(lp_zsc$allmean_z >= 0.8, "high",
+                       ifelse(lp_zsc$allmean_z <= -0.8, "low",
+                              "mid"))
+
+## reverse the tf order for later heatmap usage
+dat$tf <- factor(dat$tf,
+                 levels = rev(colnames(normpkn_cls_mx)))
+
+## assign colors to TFs in diff. groups
+labelcol <- ifelse(lp_zsc$group == "high", "#CD5C5C",   #'high' = 'IndianRed'
+                  ifelse(lp_zsc$group == "mid", "#DAA520", #'mid' = 'Goldenrod'
+                         "#4682B4"))  #'low' = 'SteelBlue'
+```
+
+
+## Default matrix
+### Barchart 
+Stacked and percent stacked barplot to show the number and proportion.
+Setup and color:
+```{r}
+library(ggplot2)
+
+theme_set(
+  theme_minimal() +
+    theme(legend.position = "right",
+          legend.key.size = unit(12, "pt"))
+)
+
+library(ggsci)
+simpsons <- pal_simpsons("springfield")(16)
+```
+#### Stacked barchart
+```{r}
+# stack
+p <- ggplot(data = dat,
+            aes(x = tf, y = norm, fill = class))
+p + geom_bar(stat = "identity", position = "stack") +
+  labs(title = "TE Class Distribution",
+       x = NULL, y = "Normed TE Number") +
+  coord_flip() +
+  scale_fill_manual(values = simpsons) +
+  guides(fill = guide_legend(title = "TE Class", reverse = F)) +
+  theme(axis.text.x = element_text(size = 8),
+        axis.text.y = element_text(size = 7, colour = rev(labelcol), face = "bold"),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 6))
+#ggsave(filename = "../../figure/norm_resize/tf_class_bar_stack.png", width = 7,height = 12, dpi = 1000)
+#ggsave(filename = "../../figure/norm_resize/tf_class_bar_stack.pdf", width = 7,height = 12, dpi = 1000)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
