@@ -33,6 +33,7 @@ labelcol <- ifelse(lp_zsc$group == "high", "#CD5C5C",   #'high' = 'IndianRed'
                   ifelse(lp_zsc$group == "mid", "#DAA520", #'mid' = 'Goldenrod'
                          "#4682B4"))  #'low' = 'SteelBlue'
 
+### default matrix
 ## barchart to show distribution
 library(ggplot2)
 
@@ -102,6 +103,7 @@ range(normpkn_cls_mx) #resized to 200 bp, back to the peak number
 quantile(normpkn_cls_mx)
 bk <- seq(min(normpkn_cls_mx), max(normpkn_cls_mx), length.out = 100) #uniform breaks
 
+# Heatmap!
 #library("RColorBrewer")
 library(viridis)
 #col <- colorRampPalette(brewer.pal(11, "Spectral"))(length(bk)) %>% rev()
@@ -229,6 +231,21 @@ pheatmap::pheatmap(t(zn_tecls), scale = "none",
                    annotation_row = anno_tf,
                    annotation_colors = looping,
                    filename = "../../figure/norm_resize/zn_te_heatmap_unibk.png")
+
+# uni breaks TFs clustered
+pheatmap::pheatmap(t(zn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T,
+                   breaks = zbk,
+                   color = viridis(length(zbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap z-score normalization uniform breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping,
+                   filename = "../../figure/norm_resize/zn_te_heatmap_cluster_unibk.png")
 
 # quantile breaks
 pheatmap::pheatmap(t(zn_tecls), scale = "none",
