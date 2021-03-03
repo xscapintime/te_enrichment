@@ -1,10 +1,10 @@
 ---
 title: "TE Distribution and Normalizaiton (by class)"
 author: "L.S."
-date: "2021/3/3"
+date: "2021/3/4"
 output: html_document:
     theme: cerulean
-    toc: no
+    toc: yes
     number_sections: no
   pdf_document:
     toc: no
@@ -13,6 +13,7 @@ output: html_document:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
 ## Setup
 ```{r}
 rm(list = ls())
@@ -26,12 +27,14 @@ options(scipen = 999)
 TE class were sorted by number, and TFs were sorted by looping z-score.
 ```{r}
 load("./nromedpkn_class_matrix_sorted.Rdata")
+normpkn_cls_mx[1:6,1:6]
 
 ## transform to long data format
 dat <- melt(normpkn_cls_mx)
 colnames(dat) <- c("class", "tf", "norm")
 ```
 ### Load looping z-score
+The TFs were grouped into 3 groups according their looping z-score. The absolute value of 0.8 was seen as the "significant point".
 ```{r}
 lp_zsc <- read.csv("../.././../../hs_getloops/intrachr/3.plot/exless_h.all.tf_des-meanz.v3.csv", header = T)
 
@@ -51,8 +54,8 @@ labelcol <- ifelse(lp_zsc$group == "high", "#CD5C5C",   #'high' = 'IndianRed'
 ```
 
 
-## Default matrix
-### Barchart 
+## Un-transformed matrix
+### Barplot 
 Stacked and percent stacked barplot to show the number and proportion.
 Setup and color:
 ```{r}
@@ -67,7 +70,8 @@ theme_set(
 library(ggsci)
 simpsons <- pal_simpsons("springfield")(16)
 ```
-#### Stacked barchart
+
+#### Stacked barplot
 ```{r}
 # stack
 p <- ggplot(data = dat,
@@ -86,4 +90,213 @@ p + geom_bar(stat = "identity", position = "stack") +
 #ggsave(filename = "../../figure/norm_resize/tf_class_bar_stack.pdf", width = 7,height = 12, dpi = 1000)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#### Percent stacked barplot
+```{r}
+# fill
+p <- ggplot(data = dat,
+            aes(x = tf, y = norm, fill = class))
+p + geom_bar(stat = "identity", position = "fill") +
+  labs(title = "TE Class Distribution",
+       x = NULL,y = "Normed TE Proportion") +
+  coord_flip() +
+  scale_fill_manual(values = simpsons) +
+  guides(fill = guide_legend(title="TE Class", reverse = F)) +
+  theme(axis.text.x = element_text(size = 8),
+        axis.text.y = element_text(size = 7, colour = rev(labelcol), face = "bold"),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 6))
+#ggsave(filename = "../../figure/norm_resize/tf_class_bar_fill.png", width = 7,height = 12, dpi = 1000)
+#ggsave(filename = "../../figure/norm_resize/tf_class_bar_fill.pdf", width = 7,height = 12, dpi = 1000)
+```
+
+### Histogram
+```{r}
+theme_set(
+  theme_classic() +
+    theme(legend.position = "none")
+)
+
+p <- ggplot(dat, aes(x = norm))
+p + geom_histogram(aes(y = stat(density), colour = "black"),
+                   fill = "white", bins = 100) +
+  geom_density(alpha = 0.2, fill = "#FF6666") +
+  scale_color_manual(values = c("#868686FF")) +
+  labs(title = "Normalized TE Num Histogram",
+       subtitle = "Human",
+       caption = "bins = 100") +
+  ylab("Dens.") +
+  xlab("Normalized TE number")
+#ggsave(filename = "Normalized_te_number_hisogram.png", path = "../../figure/norm_resize")  
+```
+
+### Heatmap
+Bins in histogram might give some hints on how to set the "break" of the color legend of heatmap..?
+```{r}
+range(normpkn_cls_mx) #resized to 200 bp, back to the peak number
+quantile(normpkn_cls_mx)
+bk <- seq(min(normpkn_cls_mx), max(normpkn_cls_mx), length.out = 100) #uniform breaks
+```
+
+Set the annotation column and color.
+```{r}
+anno_tf <- data.frame(lp_zsc$group, row.names = lp_zsc$X)
+colnames(anno_tf) <- "looping score"
+
+## anno color
+looping <- list(`looping score` = c(high = "#CD5C5C",
+                                    mid = "#DAA520",
+                                    low = "#4682B4"))
+```
+
+#### Heatmap of uniform breaks
+Group by looping z-score
+```{r}
+pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = F,
+                   breaks = bk,
+                   color = viridis(length(bk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap default",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+                   #filename = "../../figure/norm_resize/default_te_heatmap_unibk100.png")
+```
+
+TFs clustered
+```{r}
+pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T,
+                   breaks = bk,
+                   color = viridis(length(bk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap default",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+                   #filename = "../../figure/norm_resize/default_te_heatmap_cluster_unibk100.png")
+```
+
+#### Heatmap of quantile breaks
+> https://slowkow.com/notes/pheatmap-tutorial/#quantile-breaks
+```{r}
+quantile_breaks <- function(xs, n) {
+  breaks <- quantile(xs, probs = seq(0, 1, length.out = n))
+  breaks[!duplicated(breaks)]
+}
+qbk <- quantile_breaks(normpkn_cls_mx, n = 100)
+```
+
+Group by looping z-score
+```{r}
+# quantile breaks heatmap
+pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = F,
+                   breaks = qbk,
+                   color = viridis(length(qbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap default quantile breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+                   #filename = "../../figure/norm_resize/default_te_heatmap_qbk100.png")
+```
+
+TFs clustered
+```{r}
+pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T,
+                   breaks = qbk,
+                   color = viridis(length(qbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap default quantile breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+                   #filename = "../../figure/norm_resize/default_te_heatmap_cluster_qbk100.png")
+```
+
+## Z-score normalization
+z-score normalized by between TFs.
+```{r}
+zn_tecls <- t(scale(t(normpkn_cls_mx))) #(n-row.mean)/row.sd
+
+## long data format for ggplot2 histogram
+zdat <- melt(zn_tecls)
+colnames(zdat) <- c("class", "tf", "norm")
+```
+
+### Histogram
+```{r}
+theme_set(
+  theme_classic() +
+    theme(legend.position = "none")
+)
+
+p <- ggplot(zdat, aes(x = norm))
+p + geom_histogram(aes(y = stat(density), colour = "black"),
+                   fill = "white", bins = 50) +
+  geom_density(alpha = 0.2, fill = "#FF6666") +
+  scale_color_manual(values = c("#868686FF")) +
+  labs(title = "Z-Normalized TE Num Histogram",
+       subtitle = "Human",
+       caption = "bins = 50") +
+  ylab("Dens.") +
+  xlab("Normalized TE number")
+#ggsave(filename = "zs-Normalized_te_number_hisogram.png", path = "../../figure/norm_resize") 
+```
+
+### Heatmap
+Set uniform and quantile breaks
+```{r}
+range(zn_tecls)
+quantile(zn_tecls)
+zbk <- seq(min(zn_tecls), max(zn_tecls), length.out = 100) #uniform breaks
+qzbk <- quantile_breaks(zn_tecls, n = 100) #quantile breaks
+```
+
+#### Heatmap of uniform breaks
+Group by looping z-score
+```{r}
+pheatmap::pheatmap(t(zn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = F,
+                   breaks = zbk,
+                   color = viridis(length(zbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap z-score normalization uniform breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+                   #filename = "../../figure/norm_resize/zn_te_heatmap_unibk.png")
+```
+TFs clustered
+```{r}
+pheatmap::pheatmap(t(zn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T,
+                   breaks = zbk,
+                   color = viridis(length(zbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap z-score normalization uniform breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping,
+                   filename = "../../figure/norm_resize/zn_te_heatmap_cluster_unibk.png")
+```
