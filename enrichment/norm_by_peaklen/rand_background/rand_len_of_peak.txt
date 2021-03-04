@@ -1,0 +1,6 @@
+input_random01 789850 78.985
+input_random02 400012 40.0012
+input_random03 500010 50.001
+input_random04 500004 50.0004
+input_random05 500014 50.0014
+input_random06 1276020 127.602
