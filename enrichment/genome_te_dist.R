@@ -54,6 +54,7 @@ for (cls in all.class) {
   }
 }
 
+saveRDS(cls_mx,file = "teclass_mx_bychr.rds")
 
 #################=============== plot ================#########################
 
@@ -200,6 +201,7 @@ for (fml in all.fml) {
   }
 }
 
+saveRDS(fml_mx,file = "tefamily_mx_bychr.rds")
 
 #################=============== plot ================#########################
 
