@@ -51,16 +51,16 @@ p <- ggplot(data = dat,
             aes(x = tf, y = norm, fill = class))
 p + geom_bar(stat = "identity", position = "fill") +
   labs(title = "TE Class Distribution",
-       x = NULL,y = "Normed TE Proportion") +
+       x = NULL, y = "Normed TE Proportion") +
   coord_flip() +
   scale_fill_manual(values = simpsons) +
-  guides(fill = guide_legend(title="TE Class", reverse = F)) +
+  guides(fill = guide_legend(title = "TE Class", reverse = F)) +
   theme(axis.text.x = element_text(size = 8),
         axis.text.y = element_text(size = 7, colour = rev(labelcol), face = "bold"),
         legend.title = element_text(size = 7),
         legend.text = element_text(size = 6))
-ggsave(filename = "../../figure/norm_resize/tf_class_bar_fill.png", width = 7,height = 12, dpi = 1000)
-ggsave(filename = "../../figure/norm_resize/tf_class_bar_fill.pdf", width = 7,height = 12, dpi = 1000)
+ggsave(filename = "../../figure/norm_resize/tf_class_bar_fill.png", width = 7, height = 12, dpi = 1000)
+ggsave(filename = "../../figure/norm_resize/tf_class_bar_fill.pdf", width = 7, height = 12, dpi = 1000)
 
 # stack
 p <- ggplot(data = dat,
@@ -343,3 +343,4 @@ pheatmap::pheatmap(t(qn_tecls), scale = "none",
 
 #---
 #Seems quantile normalizaiton doesn't work so well
+
