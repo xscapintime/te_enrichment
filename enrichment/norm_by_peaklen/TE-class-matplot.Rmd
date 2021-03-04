@@ -2,12 +2,13 @@
 title: "TE Distribution and Normalizaiton (by class)"
 author: "L.S."
 date: "2021/3/4"
-output: html_document:
+output:
+  pdf_document:
+    toc: no
+  html_document:
     theme: cerulean
     toc: yes
     number_sections: no
-  pdf_document:
-    toc: no
 ---
 
 ```{r setup, include=FALSE}
@@ -17,7 +18,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Setup
 ```{r}
 rm(list = ls())
-library(dplyr)
 library(reshape2)
 options(scipen = 999)
 ```
@@ -72,7 +72,7 @@ simpsons <- pal_simpsons("springfield")(16)
 ```
 
 #### Stacked barplot
-```{r}
+```{r, fig.width = 7, fig.height = 12}
 # stack
 p <- ggplot(data = dat,
             aes(x = tf, y = norm, fill = class))
@@ -86,12 +86,10 @@ p + geom_bar(stat = "identity", position = "stack") +
         axis.text.y = element_text(size = 7, colour = rev(labelcol), face = "bold"),
         legend.title = element_text(size = 7),
         legend.text = element_text(size = 6))
-#ggsave(filename = "../../figure/norm_resize/tf_class_bar_stack.png", width = 7,height = 12, dpi = 1000)
-#ggsave(filename = "../../figure/norm_resize/tf_class_bar_stack.pdf", width = 7,height = 12, dpi = 1000)
 ```
 
 #### Percent stacked barplot
-```{r}
+```{r, fig.width = 7, fig.height = 12}
 # fill
 p <- ggplot(data = dat,
             aes(x = tf, y = norm, fill = class))
@@ -105,8 +103,6 @@ p + geom_bar(stat = "identity", position = "fill") +
         axis.text.y = element_text(size = 7, colour = rev(labelcol), face = "bold"),
         legend.title = element_text(size = 7),
         legend.text = element_text(size = 6))
-#ggsave(filename = "../../figure/norm_resize/tf_class_bar_fill.png", width = 7,height = 12, dpi = 1000)
-#ggsave(filename = "../../figure/norm_resize/tf_class_bar_fill.pdf", width = 7,height = 12, dpi = 1000)
 ```
 
 ### Histogram
@@ -126,7 +122,6 @@ p + geom_histogram(aes(y = stat(density), colour = "black"),
        caption = "bins = 100") +
   ylab("Dens.") +
   xlab("Normalized TE number")
-#ggsave(filename = "Normalized_te_number_hisogram.png", path = "../../figure/norm_resize")  
 ```
 
 ### Heatmap
@@ -139,6 +134,8 @@ bk <- seq(min(normpkn_cls_mx), max(normpkn_cls_mx), length.out = 100) #uniform b
 
 Set the annotation column and color.
 ```{r}
+library(viridis)
+
 anno_tf <- data.frame(lp_zsc$group, row.names = lp_zsc$X)
 colnames(anno_tf) <- "looping score"
 
@@ -149,11 +146,11 @@ looping <- list(`looping score` = c(high = "#CD5C5C",
 ```
 
 #### Heatmap of uniform breaks
-Group by looping z-score
-```{r}
-pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
+```{r, fig.show = "hide"}
+
+grp <- pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
                    cluster_cols = T,
-                   cluster_rows = F,
+                   cluster_rows = F, ## Group by looping z-score
                    breaks = bk,
                    color = viridis(length(bk)),
                    border_color = "grey20",
@@ -163,28 +160,31 @@ pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
                    cellheight = 12,
                    annotation_row = anno_tf,
                    annotation_colors = looping)
-                   #filename = "../../figure/norm_resize/default_te_heatmap_unibk100.png")
+
+clus <- pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T, ## TFs clustered
+                   breaks = bk,
+                   color = viridis(length(bk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap default clustered",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
 ```
 
-TFs clustered
-```{r}
-pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
-                   cluster_cols = T,
-                   cluster_rows = T,
-                   breaks = bk,
-                   color = viridis(length(bk)),
-                   border_color = "grey20",
-                   clustering_distance_rows = "correlation",
-                   main = "pheatmap default",
-                   cellwidth = 12,
-                   cellheight = 12,
-                   annotation_row = anno_tf,
-                   annotation_colors = looping)
-                   #filename = "../../figure/norm_resize/default_te_heatmap_cluster_unibk100.png")
+```{r, fig.width = 12, fig.height = 20}
+require(ggplotify)
+p1 <- as.ggplot(grp)
+p2 <- as.ggplot(clus)
+cowplot::plot_grid(p1, p2, ncol=2)
 ```
 
 #### Heatmap of quantile breaks
 > https://slowkow.com/notes/pheatmap-tutorial/#quantile-breaks
+
 ```{r}
 quantile_breaks <- function(xs, n) {
   breaks <- quantile(xs, probs = seq(0, 1, length.out = n))
@@ -193,45 +193,46 @@ quantile_breaks <- function(xs, n) {
 qbk <- quantile_breaks(normpkn_cls_mx, n = 100)
 ```
 
-Group by looping z-score
-```{r}
-# quantile breaks heatmap
-pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
+```{r, fig.show = "hide"}
+grp <- pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
                    cluster_cols = T,
-                   cluster_rows = F,
+                   cluster_rows = F, ## Group by looping z-score
                    breaks = qbk,
                    color = viridis(length(qbk)),
                    border_color = "grey20",
                    clustering_distance_rows = "correlation",
-                   main = "pheatmap default quantile breaks",
+                   main = "pheatmap default with quantile breaks",
                    cellwidth = 12,
                    cellheight = 12,
                    annotation_row = anno_tf,
                    annotation_colors = looping)
-                   #filename = "../../figure/norm_resize/default_te_heatmap_qbk100.png")
+
+clus <- pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T, ## TFs clustered
+                   breaks = qbk,
+                   color = viridis(length(qbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap default with quantile breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
 ```
 
-TFs clustered
-```{r}
-pheatmap::pheatmap(t(normpkn_cls_mx), scale = "none",
-                   cluster_cols = T,
-                   cluster_rows = T,
-                   breaks = qbk,
-                   color = viridis(length(qbk)),
-                   border_color = "grey20",
-                   clustering_distance_rows = "correlation",
-                   main = "pheatmap default quantile breaks",
-                   cellwidth = 12,
-                   cellheight = 12,
-                   annotation_row = anno_tf,
-                   annotation_colors = looping)
-                   #filename = "../../figure/norm_resize/default_te_heatmap_cluster_qbk100.png")
+```{r, fig.width = 12, fig.height = 20}
+require(ggplotify)
+p1 <- as.ggplot(grp)
+p2 <- as.ggplot(clus)
+cowplot::plot_grid(p1, p2, ncol=2)
 ```
 
 ## Z-score normalization
 z-score normalized by between TFs.
 ```{r}
 zn_tecls <- t(scale(t(normpkn_cls_mx))) #(n-row.mean)/row.sd
+zn_tecls[1:6,1:6]
 
 ## long data format for ggplot2 histogram
 zdat <- melt(zn_tecls)
@@ -250,12 +251,11 @@ p + geom_histogram(aes(y = stat(density), colour = "black"),
                    fill = "white", bins = 50) +
   geom_density(alpha = 0.2, fill = "#FF6666") +
   scale_color_manual(values = c("#868686FF")) +
-  labs(title = "Z-Normalized TE Num Histogram",
+  labs(title = "Z-Score Normalized TE Num Histogram",
        subtitle = "Human",
        caption = "bins = 50") +
   ylab("Dens.") +
-  xlab("Normalized TE number")
-#ggsave(filename = "zs-Normalized_te_number_hisogram.png", path = "../../figure/norm_resize") 
+  xlab("Z-Score Normalized TE number")
 ```
 
 ### Heatmap
@@ -268,35 +268,302 @@ qzbk <- quantile_breaks(zn_tecls, n = 100) #quantile breaks
 ```
 
 #### Heatmap of uniform breaks
-Group by looping z-score
-```{r}
-pheatmap::pheatmap(t(zn_tecls), scale = "none",
+```{r, fig.show = "hide"}
+grp <- pheatmap::pheatmap(t(zn_tecls), scale = "none",
                    cluster_cols = T,
-                   cluster_rows = F,
+                   cluster_rows = F, ## Group by looping z-score
                    breaks = zbk,
                    color = viridis(length(zbk)),
                    border_color = "grey20",
                    clustering_distance_rows = "correlation",
-                   main = "pheatmap z-score normalization uniform breaks",
+                   main = "pheatmap z-score normalization with uniform breaks",
                    cellwidth = 12,
                    cellheight = 12,
                    annotation_row = anno_tf,
                    annotation_colors = looping)
-                   #filename = "../../figure/norm_resize/zn_te_heatmap_unibk.png")
-```
-TFs clustered
-```{r}
-pheatmap::pheatmap(t(zn_tecls), scale = "none",
+
+clus <- pheatmap::pheatmap(t(zn_tecls), scale = "none",
                    cluster_cols = T,
-                   cluster_rows = T,
+                   cluster_rows = T, ## TFs clustered
                    breaks = zbk,
                    color = viridis(length(zbk)),
                    border_color = "grey20",
                    clustering_distance_rows = "correlation",
-                   main = "pheatmap z-score normalization uniform breaks",
+                   main = "pheatmap z-score normalization with uniform breaks clustered",
                    cellwidth = 12,
                    cellheight = 12,
                    annotation_row = anno_tf,
-                   annotation_colors = looping,
-                   filename = "../../figure/norm_resize/zn_te_heatmap_cluster_unibk.png")
+                   annotation_colors = looping)
+```
+
+```{r, fig.width = 12, fig.height = 20}
+require(ggplotify)
+p1 <- as.ggplot(grp)
+p2 <- as.ggplot(clus)
+cowplot::plot_grid(p1, p2, ncol=2)
+```
+
+#### Heatmap of quantile breaks
+```{r, fig.show = "hide"}
+grp <- pheatmap::pheatmap(t(zn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = F, ## Group by looping z-score
+                   breaks = qzbk,
+                   color = viridis(length(qzbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap z-score normalization with quantile breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+
+clus <- pheatmap::pheatmap(t(zn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T, ## TFs clustered
+                   breaks = qzbk,
+                   color = viridis(length(qzbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap z-score normalization with quantile breaks clustered",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+```
+
+```{r, fig.width = 12, fig.height = 20}
+require(ggplotify)
+p1 <- as.ggplot(grp)
+p2 <- as.ggplot(clus)
+cowplot::plot_grid(p1, p2, ncol=2)
+```
+
+
+## Quantile normalization
+```{r}
+library(preprocessCore)
+qn_tecls <- normalize.quantiles(normpkn_cls_mx)
+dimnames(qn_tecls) <- list(row.names(normpkn_cls_mx), colnames(normpkn_cls_mx))
+qn_tecls[1:6,1:6]
+
+## long data format for ggplot2 histogram
+qdat <- melt(qn_tecls)
+colnames(qdat) <- c("class", "tf", "norm")
+```
+
+### Histogram
+```{r}
+theme_set(
+  theme_classic() +
+    theme(legend.position = "none")
+)
+
+p <- ggplot(qdat, aes(x = norm))
+p + geom_histogram(aes(y = stat(density), colour = "black"),
+                   fill = "white", bins = 18) +
+  geom_density(alpha = 0.2, fill = "#FF6666") +
+  scale_color_manual(values = c("#868686FF")) +
+  labs(title = "Quantile Normalized TE Num Histogram",
+       subtitle = "Human",
+       caption = "bins = 18") +
+  ylab("Dens.") +
+  xlab("Quantile Normalized TE number")
+```
+
+### Heatmap
+Set uniform and quantile breaks
+```{r}
+range(qn_tecls)
+quantile(qn_tecls)
+uni_qnbk <- seq(min(qn_tecls), max(qn_tecls), length.out = 18) #uniform breaks
+q_qnbk <- quantile_breaks(qn_tecls, n = 18) #quantile breaks
+```
+
+#### Heatmap of uniform breaks
+```{r, fig.show = "hide"}
+grp <- pheatmap::pheatmap(t(qn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = F, ## Group by looping z-score
+                   breaks = uni_qnbk,
+                   color = viridis(length(uni_qnbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap quantile normalization with uniform breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+
+clus <- pheatmap::pheatmap(t(qn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T, ## TFs clustered
+                   breaks = uni_qnbk,
+                   color = viridis(length(uni_qnbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap quantile normalization with uniform breaks clustered",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+```
+
+```{r, fig.width = 12, fig.height = 20}
+require(ggplotify)
+p1 <- as.ggplot(grp)
+p2 <- as.ggplot(clus)
+cowplot::plot_grid(p1, p2, ncol=2)
+```
+
+#### Heatmap of quantile breaks
+```{r, fig.show = "hide"}
+grp <- pheatmap::pheatmap(t(qn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = F, ## Group by looping z-score
+                   breaks = q_qnbk,
+                   color = viridis(length(q_qnbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap quantile normalization with quantile breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+
+clus <- pheatmap::pheatmap(t(qn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T, ## TFs clustered
+                   breaks = q_qnbk,
+                   color = viridis(length(q_qnbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap quantile normalization with quantile breaks clustered",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+```
+
+```{r, fig.width = 12, fig.height = 20}
+require(ggplotify)
+p1 <- as.ggplot(grp)
+p2 <- as.ggplot(clus)
+cowplot::plot_grid(p1, p2, ncol=2)
+```
+
+
+## Quantile normalization (normed TE matirx transpose)
+In Xiaohua Shen's Cell Reports paper(Lu, J. Yuyang, et al. "Genomic repeats categorize genes with distinct functions for orchestrated regulation." Cell reports 30.10 (2020): 3296-3311.), they have a matrix(40,005 * 84) of 40,005 transcripts and 84(14 * 6) repetive elements(of different genic regions).
+> The raw repetitive element matrix (40,005384) was normalized with "normalize.quantiles" function in "pre- processCore" package in R software.
+
+```{r}
+library(preprocessCore)
+tqn_tecls <- t(normalize.quantiles(t(normpkn_cls_mx)))
+dimnames(tqn_tecls) <- list(row.names(normpkn_cls_mx), colnames(normpkn_cls_mx))
+tqn_tecls[1:6,1:6]
+
+## long data format for ggplot2 histogram
+tqdat <- melt(tqn_tecls)
+colnames(tqdat) <- c("class", "tf", "norm")
+```
+
+### Histogram
+```{r}
+theme_set(
+  theme_classic() +
+    theme(legend.position = "none")
+)
+
+p <- ggplot(tqdat, aes(x = norm))
+p + geom_histogram(aes(y = stat(density), colour = "black"),
+                   fill = "white", bins = 50) +
+  geom_density(alpha = 0.2, fill = "#FF6666") +
+  scale_color_manual(values = c("#868686FF")) +
+  labs(title = "T-Quantile Normalized TE Num Histogram",
+       subtitle = "Human",
+       caption = "bins = 18") +
+  ylab("Dens.") +
+  xlab("T-Quantile Normalized TE number")
+```
+
+### Heatmap
+Set uniform and quantile breaks
+```{r}
+range(tqn_tecls)
+quantile(tqn_tecls)
+uni_tqnbk <- seq(min(tqn_tecls), max(tqn_tecls), length.out = 50) #uniform breaks
+q_tqnbk <- quantile_breaks(tqn_tecls, n = 50) #quantile breaks
+```
+
+#### Heatmap of uniform breaks
+```{r, fig.show = "hide"}
+grp <- pheatmap::pheatmap(t(tqn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = F, ## Group by looping z-score
+                   breaks = uni_tqnbk,
+                   color = viridis(length(uni_tqnbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap t-quantile normalization with uniform breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+
+clus <- pheatmap::pheatmap(t(tqn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T, ## TFs clustered
+                   breaks = uni_tqnbk,
+                   color = viridis(length(uni_tqnbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap t-quantile normalization with uniform breaks clustered",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+```
+
+```{r, fig.width = 12, fig.height = 20}
+require(ggplotify)
+p1 <- as.ggplot(grp)
+p2 <- as.ggplot(clus)
+cowplot::plot_grid(p1, p2, ncol=2)
+```
+
+#### Heatmap of quantile breaks
+```{r, fig.show = "hide"}
+grp <- pheatmap::pheatmap(t(tqn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = F, ## Group by looping z-score
+                   breaks = q_tqnbk,
+                   color = viridis(length(q_tqnbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap t-quantile normalization with quantile breaks",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+
+clus <- pheatmap::pheatmap(t(tqn_tecls), scale = "none",
+                   cluster_cols = T,
+                   cluster_rows = T, ## TFs clustered
+                   breaks = q_tqnbk,
+                   color = viridis(length(q_tqnbk)),
+                   border_color = "grey20",
+                   clustering_distance_rows = "correlation",
+                   main = "pheatmap t-quantile normalization with quantile breaks clustered",
+                   cellwidth = 12,
+                   cellheight = 12,
+                   annotation_row = anno_tf,
+                   annotation_colors = looping)
+```
+
+```{r, fig.width = 12, fig.height = 20}
+require(ggplotify)
+p1 <- as.ggplot(grp)
+p2 <- as.ggplot(clus)
+cowplot::plot_grid(p1, p2, ncol=2)
 ```
